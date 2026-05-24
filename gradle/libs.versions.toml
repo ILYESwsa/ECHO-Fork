@@ -40,7 +40,7 @@ rhino = "1.9.1"
 multiplatformMarkdown = "0.40.2"
 okhttp = "5.3.2"
 googleServices = "4.4.2"
-firebaseCrashlyticsPlugin = "3.0.2"
+firebaseCrashlyticsPlugin = "3.0.7"
 firebaseBom = "33.1.2"
 
 [libraries]
