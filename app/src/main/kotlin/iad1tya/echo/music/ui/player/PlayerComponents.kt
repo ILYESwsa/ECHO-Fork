@@ -119,9 +119,6 @@ import iad1tya.echo.music.ui.theme.GLASS_CORNER_LARGE
 import iad1tya.echo.music.ui.theme.GLASS_CORNER_MEDIUM
 import iad1tya.echo.music.ui.theme.liquidGlass
 import iad1tya.echo.music.ui.theme.liquidGlassLight
-import androidx.compose.foundation.border
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.draw.drawWithContent
 import iad1tya.echo.music.ui.utils.ShowMediaInfo
 import iad1tya.echo.music.utils.makeTimeString
 
