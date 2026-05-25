@@ -270,6 +270,7 @@ fun LyricsScreen(
         PlayerBackgroundStyle.GLOW -> Color.White
         PlayerBackgroundStyle.GLOW_ANIMATED -> Color.White
         PlayerBackgroundStyle.CUSTOM -> Color.White
+        PlayerBackgroundStyle.LIQUID_GLASS -> Color.White
     }
 
     val icBackgroundColor = when (playerBackground) {
@@ -281,6 +282,7 @@ fun LyricsScreen(
         PlayerBackgroundStyle.GLOW -> Color.Black
         PlayerBackgroundStyle.GLOW_ANIMATED -> Color.Black
         PlayerBackgroundStyle.CUSTOM -> Color.Black
+        PlayerBackgroundStyle.LIQUID_GLASS -> Color.Black
     }
 
     LaunchedEffect(playbackState) {
