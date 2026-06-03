@@ -7,64 +7,58 @@ on:
       - 'v*'
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:           # allow manual trigger from GitHub UI
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true    # cancel older runs on the same branch
+  cancel-in-progress: true
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────────
-  # DEBUG build — runs on every push/PR, no secrets required
-  # Produces: arm64FossDebug + universalFossDebug APKs
-  # ─────────────────────────────────────────────────────────────────────────
   build-debug:
     name: Debug APK
     runs-on: ubuntu-latest
     if: "!startsWith(github.ref, 'refs/tags/')"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-
       - name: Create google-services.json
         run: |
           if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
             echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
           else
-            # Minimal placeholder so Firebase doesn't block the build
             cat > app/google-services.json << 'JSON'
           {
-            "project_info": { "project_id": "placeholder", "project_number": "000000000000" },
+            "project_info": {
+              "project_id": "placeholder",
+              "project_number": "000000000000",
+              "firebase_url": "https://placeholder.firebaseio.com",
+              "storage_bucket": "placeholder.appspot.com"
+            },
             "client": [{
-              "client_info": { "mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": { "package_name": "iad1tya.echo.music" } },
+              "client_info": {
+                "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                "android_client_info": { "package_name": "iad1tya.echo.music" }
+              },
               "api_key": [{ "current_key": "placeholder" }],
-              "services": {}
+              "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
             }],
             "configuration_version": "1"
           }
           JSON
           fi
-
-      - name: Generate debug keystore (persistent-debug)
+      - name: Generate debug keystore
         run: |
           if [ ! -f app/persistent-debug.keystore ]; then
             keytool -genkeypair -v \
@@ -72,9 +66,8 @@ jobs:
               -alias androiddebugkey \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass android -keypass android \
-              -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, S=Debug, C=US"
+              -dname "CN=Debug,OU=Debug,O=Debug,L=Debug,S=Debug,C=US"
           fi
-
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -84,71 +77,55 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
-      - name: Build debug APKs (arm64 + universal, FOSS)
-        run: ./gradlew assembleArm64FossDebug assembleUniversalFossDebug --no-daemon --stacktrace
-
+      - name: Build debug APKs
+        run: |
+          ./gradlew \
+            assembleArm64FossDebug \
+            assembleUniversalFossDebug \
+            --no-daemon \
+            --stacktrace \
+            --warning-mode all \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=512m"
       - name: Collect APKs
         run: |
           mkdir -p artifacts
           find app/build/outputs/apk -name "*.apk" | while read f; do
-            flavor=$(echo "$f" | grep -oP '(?<=apk/).*(?=/debug)' | tr '/' '-')
-            cp "$f" "artifacts/EchoMusic-${flavor}-debug.apk"
+            name=$(basename "$f" .apk)
+            cp "$f" "artifacts/EchoMusic-${name}.apk"
           done
           ls -lh artifacts/
-
-      - name: Upload debug APKs
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: debug-apks-${{ github.sha }}
           path: artifacts/*.apk
           retention-days: 14
 
-  # ─────────────────────────────────────────────────────────────────────────
-  # RELEASE build — runs only on version tags (v1.0.0, v2.3.1, etc.)
-  # Produces signed APKs for all ABI flavors (FOSS variant)
-  # Required secrets:
-  #   KEYSTORE_BASE64      → base64 of your release.keystore file
-  #   STORE_PASSWORD       → keystore password
-  #   KEY_ALIAS            → key alias inside the keystore
-  #   KEY_PASSWORD         → key password
-  #   GOOGLE_SERVICES_JSON → your google-services.json content
-  # ─────────────────────────────────────────────────────────────────────────
   build-release:
     name: Release APK
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-
       - name: Create google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
-
-      - name: Decode & install release keystore
+      - name: Decode release keystore
         run: |
           mkdir -p app/keystore
           echo '${{ secrets.KEYSTORE_BASE64 }}' | base64 --decode > app/keystore/release.keystore
-
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -158,8 +135,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
-      - name: Build release APKs (all ABI, FOSS variant)
+      - name: Build release APKs
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS:      ${{ secrets.KEY_ALIAS }}
@@ -171,25 +147,25 @@ jobs:
             assembleArmeabiFossRelease \
             assembleX86FossRelease \
             assembleX8664FossRelease \
-            --no-daemon --stacktrace
-
-      - name: Collect & rename APKs
+            --no-daemon \
+            --stacktrace \
+            --warning-mode all \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=512m"
+      - name: Collect APKs
         run: |
           mkdir -p artifacts
-          VERSION="${GITHUB_REF_NAME}"          # e.g. v5.1.6
+          VERSION="${GITHUB_REF_NAME}"
           find app/build/outputs/apk -name "*.apk" | while read f; do
             abi=$(echo "$f" | grep -oP '(universal|arm64|armeabi|x86_64|x86)(?=Foss)')
             cp "$f" "artifacts/EchoMusic-${VERSION}-${abi}.apk"
           done
           ls -lh artifacts/
-
-      - name: Upload release APKs as artifact
+      - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-apks-${{ github.ref_name }}
           path: artifacts/*.apk
           retention-days: 90
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -197,17 +173,13 @@ jobs:
           name: "Echo Music ${{ github.ref_name }}"
           body: |
             ## Echo Music ${{ github.ref_name }}
-
-            ### APK variants
-            | File | Recommended for |
-            |------|----------------|
-            | `EchoMusic-*-universal.apk` | Any device (largest, safest choice) |
-            | `EchoMusic-*-arm64.apk` | Most modern phones (2017+) |
-            | `EchoMusic-*-armeabi.apk` | Old 32-bit ARM devices |
-            | `EchoMusic-*-x86.apk` | Intel 32-bit (rare) |
-            | `EchoMusic-*-x86_64.apk` | Intel 64-bit / emulators |
-
-            > **Tip:** If unsure, download the `universal` APK.
+            | File | For |
+            |------|-----|
+            | `*-universal.apk` | Any device |
+            | `*-arm64.apk` | Most phones (2017+) |
+            | `*-armeabi.apk` | Old 32-bit ARM |
+            | `*-x86_64.apk` | Emulators |
+            | `*-x86.apk` | Intel 32-bit |
           draft: false
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') || contains(github.ref_name, '-rc') }}
         env:
