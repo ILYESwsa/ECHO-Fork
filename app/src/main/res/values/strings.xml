@@ -418,27 +418,18 @@
     <string name="spotify_clear_selection">Clear</string>
     <string name="spotify_account">Spotify account</string>
     <string name="spotify_waiting_for_login">Waiting for Spotify login</string>
-    <string name="integrations">Integrations</string>
     <string name="discord_rpc_settings">Discord Rich Presence</string>
     <string name="discord_token">Discord Token</string>
     <string name="discord_token_hint">Paste your Discord token here</string>
     <string name="discord_token_desc">Your token is stored locally and never shared.</string>
-    <string name="discord_status">Status</string>
-    <string name="discord_status_online">Online</string>
-    <string name="discord_status_idle">Idle</string>
-    <string name="discord_status_dnd">Do Not Disturb</string>
-    <string name="discord_activity_type">Activity Type</string>
     <string name="discord_activity_type_listening">Listening</string>
     <string name="discord_activity_type_playing">Playing</string>
     <string name="discord_activity_type_watching">Watching</string>
-    <string name="discord_use_details">Swap Title / Artist lines</string>
     <string name="discord_use_details_desc">Show title in Details and artist in State instead of the default order.</string>
-    <string name="discord_advanced_mode">Advanced Mode</string>
     <string name="discord_advanced_mode_desc">Show custom button configuration.</string>
     <string name="discord_button1_text">Button 1 Label</string>
     <string name="discord_button2_text">Button 2 Label</string>
     <string name="discord_button_visible">Visible</string>
-    <string name="discord_activity_name">Custom Activity Name</string>
     <string name="discord_activity_name_hint">e.g. Echo Music</string>
     <string name="discord_variables_hint">Variables: {title}, {artist}, {album}</string>
 </resources>
