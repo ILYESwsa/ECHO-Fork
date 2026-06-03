@@ -114,7 +114,7 @@ jobs:
           ls -lh artifacts/
 
       - name: Upload APKs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: debug-apks-${{ github.sha }}
           path: artifacts/*.apk
@@ -189,7 +189,7 @@ jobs:
           ls -lh artifacts/
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-apks-${{ github.ref_name }}
           path: artifacts/*.apk
