@@ -105,6 +105,13 @@ fun SettingsScreen(
                 )
                 add(
                     Material3SettingsItem(
+                        icon = painterResource(R.drawable.ic_discord_new),
+                        title = { Text(stringResource(R.string.discord_rpc_settings)) },
+                        onClick = { navController.navigate("settings/integrations/discord") }
+                    )
+                )
+                add(
+                    Material3SettingsItem(
                         icon = painterResource(R.drawable.language),
                         title = { Text(stringResource(R.string.content)) },
                         onClick = { navController.navigate("settings/content") }
